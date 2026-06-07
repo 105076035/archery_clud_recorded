@@ -54,10 +54,11 @@ async function api(action, params = {}, body = null) {
 
 // ── Screen helper ────────────────────────────────────────────────────────────
 function show(screenId) {
-  document.querySelectorAll('.screen').forEach(el => el.classList.remove('active'));
-  document.getElementById(`screen-${screenId}`).classList.add('active');
-  document.getElementById('top-bar').style.display =
-    screenId === 'login' ? 'none' : 'flex';
+  document.querySelectorAll('.screen').forEach(function(el) { 
+    el.classList.remove('active'); 
+  });
+  document.getElementById('screen-' + screenId).classList.add('active');
+  window.scrollTo(0, 0);
 }
 
 function $id(id) { return document.getElementById(id); }
@@ -66,32 +67,10 @@ function setErr(id, msg) { $id(id).textContent = msg || ''; }
 // ════════════════════════════════════════════════════════════════════════════
 // LOGIN
 // ════════════════════════════════════════════════════════════════════════════
-async function tryLogin() {
-  const username = $id('inp-username').value.trim();
-  const password = $id('inp-password').value;
-  setErr('login-error', '');
-  if (!username || !password) { setErr('login-error', 'Enter username and password.'); return; }
-  $id('btn-login').disabled = true;
-  try {
-    const data = await api('login', {}, { username, password });
-    S.user = data.user;
-    $id('top-username').textContent = `${data.user.first_name || data.user.username}`;
-    await loadSetup();
-    show('setup');
-  } catch(e) {
-    setErr('login-error', e.message);
-  } finally {
-    $id('btn-login').disabled = false;
-  }
-}
 
-$id('btn-login').onclick = tryLogin;
-$id('inp-password').addEventListener('keydown', e => { if (e.key==='Enter') tryLogin(); });
-
-$id('btn-logout').onclick = async () => {
+$id('btn-logout').onclick = async function() {
   await api('logout', {}, {});
-  S.user = null;
-  show('login');
+  window.location.href = 'login.php';
 };
 
 // ════════════════════════════════════════════════════════════════════════════
@@ -402,51 +381,56 @@ $id('btn-new-round').onclick = () => show('setup');
 // HISTORY
 // ════════════════════════════════════════════════════════════════════════════
 async function loadHistory() {
-  const archerId = S.user?.archer_id;
+  var archerId = S.user && S.user.archer_id ? S.user.archer_id : 0;
   if (!archerId) {
     $id('history-list').innerHTML = '<p class="empty-msg">Log in as an archer to see history.</p>';
     return;
   }
   try {
-    const data = await api('history', { archer_id: archerId });
-    if (!data.history.length) {
+    var data = await api('history', { archer_id: archerId });
+    if (!data.history || !data.history.length) {
       $id('history-list').innerHTML = '<p class="empty-msg">No completed rounds yet.</p>';
       return;
     }
-    $id('history-list').innerHTML = data.history.map(h =>
-      `<div class="history-row">
-        <div>
-          <div class="h-name">${h.competition_name}</div>
-          <div class="h-meta">${h.bow_type} / ${h.age} &bull; Round ${h.round_number} &bull; ${h.distance}m &bull; ${h.start_date}<br>${h.x_number} X's</div>
-        </div>
-        <div class="h-score">${h.total_score}</div>
-      </div>`
-    ).join('');
+    $id('history-list').innerHTML = data.history.map(function(h) {
+      return '<div class="history-row">' +
+        '<div>' +
+        '<div class="h-name">' + h.competition_name + '</div>' +
+        '<div class="h-meta">' + h.bow_type + ' / ' + h.age +
+        ' &bull; Round ' + h.round_number +
+        ' &bull; ' + h.distance + 'm' +
+        ' &bull; ' + h.start_date +
+        '<br>' + h.x_number + " X\'s</div>" +
+        '</div>' +
+        '<div class="h-score">' + h.total_score + '</div>' +
+        '</div>';
+    }).join('');
   } catch(e) {
-    $id('history-list').innerHTML = `<p class="empty-msg">${e.message}</p>`;
+    $id('history-list').innerHTML = '<p class="empty-msg">' + e.message + '</p>';
   }
 }
-
 // ── Nav ──────────────────────────────────────────────────────────────────────
-document.querySelectorAll('.nav-btn').forEach(btn => {
-  btn.addEventListener('click', async () => {
-    document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+document.querySelectorAll('.nav-btn').forEach(function(btn) {
+  btn.addEventListener('click', async function() {
+    document.querySelectorAll('.nav-btn').forEach(function(b) { b.classList.remove('active'); });
     btn.classList.add('active');
-    const target = btn.dataset.screen;
+    var target = btn.dataset.screen;
     if (target === 'history') await loadHistory();
     show(target);
+    // Scroll to top when switching screens
+    window.scrollTo(0, 0);
   });
 });
 
 // ── Boot: check if already logged in ────────────────────────────────────────
-(async () => {
+(async function() {
   try {
-    const data = await api('me');
+    var data = await api('me');
     S.user = data.user;
     $id('top-username').textContent = data.user.first_name || data.user.username;
     await loadSetup();
     show('setup');
-  } catch(_) {
-    show('login');
+  } catch(e) {
+    window.location.href = 'login.php';
   }
 })();

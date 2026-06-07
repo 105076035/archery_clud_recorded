@@ -150,10 +150,13 @@ try {
 
         // GET ?archer_id=N — history for an archer
         case 'history':
-            $archerId = (int)($_GET['archer_id'] ?? ($user['archer_id'] ?? 0));
-            if (!$archerId) jsonResponse(['error' => 'archer_id required'], 400);
-            jsonResponse(['history' => getArcherHistory($archerId)]);
-
+            $archerId = isset($_GET['archer_id'])
+            ? (int)$_GET['archer_id']
+            : (isset($user['archer_id']) ? (int)$user['archer_id'] : 0);
+            if (!$archerId) jsonResponse(array('error' => 'archer_id required'), 400);
+            $data = getArcherHistory($archerId);
+            jsonResponse(array('history' => $data));
+            break;
         default:
             jsonResponse(['error' => 'Unknown action'], 400);
     }

@@ -1,3 +1,11 @@
+<?php
+session_start();
+if (!isset($_SESSION['user'])) {
+    header('Location: login.php');
+    exit;
+}
+?>
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -11,7 +19,7 @@
 <div id="app">
 
   <!-- ── Top bar (hidden on login screen) ──────────────────────────────── -->
-  <header class="top-bar" id="top-bar" style="display:none">
+  <header class="top-bar" id="top-bar" >
     <span class="logo">&#127981; Archery Scores</span>
     <div class="top-right">
       <span id="top-username"></span>
@@ -24,30 +32,9 @@
   </header>
 
   <!-- ══════════════════════════════════════════════════════════════════════
-       SCREEN: Login
-  ═══════════════════════════════════════════════════════════════════════ -->
-  <section id="screen-login" class="screen active login-screen">
-    <div class="login-card">
-      <div class="login-logo">&#127981;</div>
-      <h1>Archery Score Recording</h1>
-      <p class="login-sub">Sign in to continue</p>
-      <div class="field">
-        <label for="inp-username">Username</label>
-        <input type="text" id="inp-username" autocomplete="username" placeholder="Enter username">
-      </div>
-      <div class="field">
-        <label for="inp-password">Password</label>
-        <input type="password" id="inp-password" autocomplete="current-password" placeholder="Enter password">
-      </div>
-      <button class="btn-primary" id="btn-login">Sign in</button>
-      <p class="status-msg" id="login-error"></p>
-    </div>
-  </section>
-
-  <!-- ══════════════════════════════════════════════════════════════════════
        SCREEN: Setup — choose competition, archer, category
   ═══════════════════════════════════════════════════════════════════════ -->
-  <section id="screen-setup" class="screen">
+  <section id="screen-setup" class="screen active">
     <div class="card">
       <h2 class="section-label">Competition</h2>
       <select id="sel-competition"></select>

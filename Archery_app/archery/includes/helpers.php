@@ -237,7 +237,7 @@ function getSavedRounds(int $competitionId, int $archerId, int $categoryId): arr
 /**
  * Completed round totals for an archer across all competitions.
  */
-function getArcherHistory(int $archerId): array {
+function getArcherHistory($archerId) {
     $stmt = getDB()->prepare(
         'SELECT r.round_number, r.total_score, r.x_number, r.distance,
                 co.name AS competition_name, co.start_date,
@@ -248,7 +248,7 @@ function getArcherHistory(int $archerId): array {
          WHERE r.archer_id = ?
          ORDER BY co.start_date DESC, r.round_number'
     );
-    $stmt->execute([$archerId]);
+    $stmt->execute(array($archerId));
     return $stmt->fetchAll();
 }
 

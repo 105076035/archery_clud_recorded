@@ -1,189 +1,173 @@
 # Archery Score Recording
-**COS20031 | Toan Nguyen (s106126517) | PHP + MariaDB**
+### PHP + MySQL — Swinburne feenix Setup Guide
 
 ---
 
-## Overview
-
-A web application for recording archery scores during competitions. Archers can log in, select a competition and category, and enter arrow scores end-by-end. Scores are saved to a MariaDB database and round totals are calculated automatically.
-
----
-
-## File Structure
+## File structure
 
 ```
 archery/
-├── index.php              ← Main app (all screens)
-├── api.php                ← JSON REST API
-├── test_db.php            ← DB connection test (delete after use)
-├── generate_hash.php      ← Password hash tool (delete after use)
-├── indexes.sql            ← Index analysis SQL
+├── index.php              ← Single-page app (all screens)
+├── api.php                ← JSON REST API (all DB operations)
+├── generate_hash.php      ← One-time password setup tool (DELETE after use)
+├── test_db.php            ← DB connection tester (DELETE after use)
+├── setup_passwords.sql    ← Reference SQL for password updates
 ├── includes/
-│   ├── config.php         ← ★ Edit this — DB credentials
-│   ├── auth.php           ← Login / session helpers
-│   └── helpers.php        ← All database queries
+│   ├── config.php         ← ★ DB credentials — edit this first
+│   ├── auth.php           ← Session login/logout helpers
+│   └── helpers.php        ← All PDO queries mapped to your schema
 └── assets/
     ├── css/style.css
-    └── js/app.js          ← All UI logic
+    └── js/app.js          ← All UI logic and fetch() API calls
 ```
 
 ---
 
-## Requirements
+## Step-by-step setup
 
-- XAMPP (Apache + MySQL)
-- PHP 5.5+ with PDO and pdo_mysql extensions
+### 1. Edit database credentials
 
----
-
-## Setup
-
-### 1. Copy files
-Drop the `archery/` folder into your XAMPP web root:
-```
-C:\xampp\htdocs\archery\
-```
-
-### 2. Start XAMPP
-Open XAMPP Control Panel and start both **Apache** and **MySQL**
-
-### 3. Import mock data
-See [Importing Mock Data from XLSX](#importing-mock-data-from-xlsx) below
-
-### 4. Edit config.php
 Open `includes/config.php` and set:
+
 ```php
-define('DB_HOST',    'localhost');
-define('DB_PORT',    '3306');
-define('DB_NAME',    'archery_db');  // your local DB name
-define('DB_USER',    'root');
-define('DB_PASS',    '');            // XAMPP default: no password
-define('DB_CHARSET', 'utf8mb4');
+define('DB_HOST', 'feenix-mariadb.swin.edu.au'); // Swinburne MariaDB host
+define('DB_NAME', 's106126517_db');               // your student DB
+define('DB_USER', 's106126517');                  // your student username
+define('DB_PASS', 'YOUR_PASSWORD_HERE');          // your DB password
 ```
 
-### 5. Set up passwords
-Visit the hash generator:
-```
-http://localhost/archery/generate_hash.php
-```
-Enter a username and password → copy the generated SQL → paste into phpMyAdmin SQL tab → click **Go**. Repeat for each user.
+> **Note for Swinburne students:** The host may be `feenix-mariadb.swin.edu.au`
+> or `localhost` if the PHP runs on the same feenix server. Check with your tutor.
 
-> ⚠️ Delete `generate_hash.php` after setting all passwords.
+---
 
-### 6. Test the connection
-```
-http://localhost/archery/test_db.php
-```
-Should show ✅ Connected with row counts for all 7 tables.
+### 2. Upload files
 
-> ⚠️ Delete `test_db.php` after confirming the connection works.
-
-### 7. Open the app
+Upload the entire `archery/` folder to your feenix web space, e.g.:
 ```
-http://localhost/archery/
+/home/s106126517/public_html/archery/
+```
+Access it at: `https://feenix.swin.edu.au/~s106126517/archery/`
+
+---
+
+### 3. Test the database connection
+
+Visit: `https://feenix.swin.edu.au/~s106126517/archery/test_db.php`
+
+You should see ✓ Connected and row counts for all 7 tables.
+If it fails, recheck `config.php` credentials.
+
+**Delete `test_db.php` from the server after confirming.**
+
+---
+
+### 4. Set up user account passwords
+
+Your `user_accounts` table needs bcrypt password hashes in `password_hash`
+and `is_active = 1` for each user who will log in.
+
+**Option A — Use the web tool (easiest):**
+
+1. Visit `https://feenix.swin.edu.au/~s106126517/archery/generate_hash.php`
+2. Enter a username (e.g. `irene.moser`) and their password
+3. Copy the generated SQL `UPDATE` statement
+4. Paste it into phpMyAdmin → SQL tab → Go
+5. Repeat for each archer/user
+6. **Delete `generate_hash.php` from the server when done**
+
+**Option B — PHP CLI (if you have SSH):**
+```bash
+php -r "echo password_hash('TheirPassword123', PASSWORD_DEFAULT);"
+```
+Then run in phpMyAdmin:
+```sql
+UPDATE user_accounts
+SET password_hash = '$2y$12$...pastehashhere...',
+    is_active = 1
+WHERE username = 'irene.moser';
+```
+
+**Option C — For testing only (set all users to same password):**
+```bash
+php -r "echo password_hash('Archery1!', PASSWORD_DEFAULT);"
+```
+```sql
+UPDATE user_accounts SET password_hash = '$2y$12$...', is_active = 1;
 ```
 
 ---
 
-## Importing Mock Data from XLSX
+### 5. Verify login works
 
-phpMyAdmin cannot import `.xlsx` files directly. You need to convert each sheet to CSV first, then import them one by one.
-
-### Step 1 — Open the XLSX in Excel
-Open your mock data file in Microsoft Excel or Google Sheets.
-
-### Step 2 — Export each sheet as CSV
-For each sheet in the workbook:
-1. Click the sheet tab (e.g. `clubs`)
-2. **Excel:** File → Save As → CSV
-3. **Google Sheets:** File → Download → CSV
-4. Name the file after the table e.g. `clubs.csv`
-5. Repeat for every sheet
-
-### Step 3 — Create the database in phpMyAdmin
-```
-http://localhost/phpmyadmin
-```
-1. Click **New** in the left sidebar
-2. Name it `archery_db` → click **Create**
-
-### Step 4 — Import in the correct order
-
-
-| Order | Table | CSV file |
-|---|---|---|
-| 1st | clubs | clubs.csv |
-| 2nd | categories | categories.csv |
-| 3rd | user_accounts | user_accounts.csv |
-| 4th | archers | archers.csv |
-| 5th | competitions | competitions.csv |
-| 6th | rounds | rounds.csv |
-| 7th | ends | ends.csv |
-
-### Step 5 — Import each CSV
-For each table:
-1. Click the table name in the left sidebar
-2. Click the **Import** tab
-3. Click **Choose File** → select the matching CSV
-4. Set **Format** to `CSV`
-5. Tick **Column names in first row** if your CSV has a header row
-6. Click **Go**
-
-You should see a green success message. Repeat for each table.
-
-### Step 6 — Verify
-Click each table → **Browse** to confirm rows loaded correctly.
+Go to `index.php`, enter a username and the password you just set.
+If login fails, check:
+- `is_active = 1` in `user_accounts`
+- The `password_hash` was saved correctly (should start with `$2y$`)
+- The `archers.username` matches `user_accounts.username` (for archer linking)
 
 ---
 
-## Database Schema
+## How the app maps to your database
 
-| Table | Description |
+| App action | Tables used |
 |---|---|
-| clubs | Archery clubs — parent of archers and competitions |
-| user_accounts | Login credentials — parent of archers |
-| archers | Archer profiles linked to a club and user account |
-| categories | Bow type, gender, and age group combinations |
-| competitions | Competition events hosted by clubs |
-| rounds | One row per round — stores total_score, x_number, distance |
-| ends | One row per end — stores all 6 arrow scores |
+| Login | `user_accounts` JOIN `archers` |
+| Choose competition | `competitions` JOIN `clubs` |
+| Choose archer | `archers` JOIN `clubs` |
+| Choose category | `categories` (filtered by archer gender) |
+| Save arrows | `ends` (arrow_1–arrow_6, upsert) |
+| Round complete | `rounds` (total_score, x_number, distance) |
+| History | `rounds` JOIN `competitions` JOIN `categories` |
 
 ---
 
-## API Endpoints
-
-All requests go through `api.php?action=...`
-
-| Action | Method | Description |
-|---|---|---|
-| `login` | POST | Authenticate user, start PHP session |
-| `logout` | POST | Destroy session |
-| `me` | GET | Get current logged-in user |
-| `competitions` | GET | List all competitions |
-| `archers` | GET | List all archers with club name |
-| `categories` | GET | List categories, optionally filtered by gender |
-| `session_data` | GET | Get saved ends and round totals for a session |
-| `save_end` | POST | Save 6 arrow scores, recalculate round total |
-| `history` | GET | Get archer's round history |
-
----
-
-## Score Rules
+## Score rules enforced
 
 - Valid values: `X 10 9 8 7 6 5 4 3 2 1 M`
-- Within each end, arrows must be entered **highest first**
+- Within each end, arrows must be entered **highest first** (descending)
+- Enforcement happens in **both** the JS keypad (buttons disabled) and the PHP API (server-side validation)
 - `X` counts as 10 points, `M` (miss) counts as 0
-- Enforced in both the JS keypad and server-side in `api.php`
+- `rounds.x_number` counts only true `X` values (not 10s)
+
+---
+
+## API endpoints
+
+All go through `api.php?action=...`
+
+| Action | Method | Auth | Description |
+|---|---|---|---|
+| `login` | POST | No | Authenticate; starts PHP session |
+| `logout` | POST | No | Destroys session |
+| `me` | GET | Yes | Current session user |
+| `competitions` | GET | Yes | All competitions |
+| `competition` | GET | Yes | Single competition by ID |
+| `archers` | GET | Yes | All archers with club |
+| `categories` | GET | Yes | All/filtered categories |
+| `clubs` | GET | Yes | All clubs |
+| `session_data` | GET | Yes | Saved ends + rounds for session |
+| `save_end` | POST | Yes | Save 6 arrows; recalc round total |
+| `history` | GET | Yes | Archer's round history |
 
 ---
 
 ## Troubleshooting
 
-| Problem | Fix |
-|---|---|
-| DB connection failed | Check `DB_HOST` is `localhost` and MySQL is running in XAMPP |
-| Access denied for user | Wrong password. XAMPP default is `root` with no password |
-| Login fails | Run `generate_hash.php`, update `password_hash`. Check `is_active = 1` |
-| Categories dropdown empty | Check `categories` table has rows. Check `archers.gender` matches enum |
-| Foreign key error on import | Import in correct order: clubs → categories → user_accounts → archers → competitions → rounds → ends |
-| CSV column mismatch | Make sure CSV header names match table column names exactly |
+**Blank page / 500 error**
+- Check PHP error logs on feenix
+- Verify all files uploaded (especially `includes/` folder)
+- Confirm PHP 7.4+ is available on feenix
+
+**"DB connection failed"**
+- Double-check `config.php` host/user/pass
+- Try `localhost` as host if `feenix-mariadb.swin.edu.au` doesn't work
+
+**Login says "Invalid credentials"**
+- Run `test_db.php` to confirm active users exist
+- Check `is_active = 1` in `user_accounts`
+- Regenerate password hash and update again
+
+**Category dropdown empty after choosing archer**
+- Check `categories` table has rows for that archer's gender
+- Check `archers.gender` is `'male'` or `'female'` (matches the enum)
